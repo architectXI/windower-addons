@@ -34,7 +34,8 @@ Shows party members' HP/MP/TP, main job, sub job and current buffs. Buffs can be
 | //xp job                | Toggles job specific settings for current job. Settings changes to range or buffs will only affect this job. |
 | //xp setup              | Toggles setup mode showing a full alliance of fake party members. Move the UI via drag and drop, hold CTRL for grid snap. Use mouse wheel to scale the UI. |
 | //xp layout [file]      | Loads a UI layout file from the XivParty/layouts directory.                                    |
-| //xp brd                | Enables BRD mode which shows a red/green dot on whether a party member is within 10 yalms of you.
+| //xp brd                | Toggles BRD mode which shows a red/green dot indicating party member range.
+| //xp brd range [dist]   | Sets the BRD mode range indicator distance (10 for wind, 20 for string instruments).
 | //xp sort default       | Returns the order of the party list back to default.                                           |
 | //xp sort brd           | Orders the party list from party members with highest mp to lowest mp, grouping up those that may need ballad, and those that may need melee songs.
 

@@ -245,6 +245,8 @@ local function showHelp()
     log('job - toggles job specific settings for current job')
     log('setup - move the UI using drag and drop, hold CTRL for grid snap, mouse wheel to scale the UI')
     log('layout <file> - loads a UI layout file')
+    log('brd - toggles BRD mode (shows range indicators)')
+    log('brd range <distance> - sets BRD mode range (10 for wind, 20 for string instruments)')
 end
 
 local function handleCommand(currentValue, argsString, text, option1String, option1Value, option2String, option2Value, isNowText)
@@ -560,16 +562,24 @@ windower.register_event('addon command', function(...)
             log('Usage: //xp sort [default|brd]')
         end
     elseif command == 'brd' then
-        if args[2] == 'toggle' or args[2] == nil then
+        if args[2] == 'range' and args[3] then
+            local range = tonumber(args[3])
+            if range and range > 0 and range <= 50 then
+                Settings.brdRange = range
+                Settings:save()
+            else
+                windower.add_to_chat(8, '[XivParty] Invalid range. Please use a value between 1 and 50.')
+            end
+        elseif args[2] == 'toggle' or args[2] == nil then
             Settings.brdMode = not Settings.brdMode
             Settings:save()
             if Settings.brdMode then
-                windower.add_to_chat(8, '[XivParty] BRD mode: ON (green outlines always active)')
+                windower.add_to_chat(8, '[XivParty] BRD mode: ON (range indicators active at ' .. Settings.brdRange .. ' yalms)')
             else
                 windower.add_to_chat(8, '[XivParty] BRD mode: OFF')
             end
         else
-            windower.add_to_chat(8, '[XivParty] Usage: //xp brd toggle')
+            windower.add_to_chat(8, '[XivParty] Usage: //xp brd [toggle|range <distance>]')
         end
     else
         showHelp()

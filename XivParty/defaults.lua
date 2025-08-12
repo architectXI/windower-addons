@@ -74,7 +74,8 @@ local defaults = {
     },
 
     sortMode = 'default', -- 'default' or 'brd' - controls party member sort order
-    brdMode = false -- when true, always shows green outlines on all party members
+    brdMode = false, -- when true, always shows green outlines on all party members
+    brdRange = 10 -- range for BRD mode indicator (10 for wind, 20 for string instruments)
 }
 
 return defaults

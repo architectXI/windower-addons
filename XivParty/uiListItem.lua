@@ -51,6 +51,7 @@ function uiListItem:init(layout, player, isUiLocked, itemWidth, itemHeight)
         self.layout = layout
         self.player = player
         self.isUiLocked = isUiLocked
+        self.itemWidth = itemWidth
 
         self.hover = self:addChild(uiImage.new(layout.hover))
         self.hover:hide(const.visFeature)
@@ -75,22 +76,27 @@ function uiListItem:init(layout, player, isUiLocked, itemWidth, itemHeight)
         self.range = self:addChild(uiRange.new(layout.range, player))
         self.buffIcons = self:addChild(uiBuffIcons.new(layout.buffIcons, player))
 
-        -- BRD mode indicator (small dot that changes color based on range)
         local brdIndicatorLayout = {
             font = 'Arial',
             size = 12,
-            color = '#00FF00FF', -- Default green color in hex
-            stroke = '#000000FF', -- Black outline in hex
+            color = '#00FF00FF',
+            stroke = '#000000FF',
             strokeWidth = 1,
             pos = L{0, 0},
             enabled = true
         }
         self.brdIndicator = self:addChild(uiText.new(brdIndicatorLayout))
-        self.brdIndicator:update('●') -- Unicode circle character
+        self.brdIndicator:update('●')
         self.brdIndicator:hide(const.visFeature)
+        
+        local brdRangeLayout = T(layout.txtName):copy()
+        brdRangeLayout.size = 12
+        self.brdRangeText = self:addChild(uiText.new(brdRangeLayout))
+        self.brdRangeText:update('')
+        self.brdRangeText:hide(const.visFeature)
 
         self.imgMouse = self:addChild(uiImage.create())
-        self.imgMouse:size(math.max(0, itemWidth - 1), math.max(0, itemHeight - 1)) -- reduce size by 1 to prevent hovering over two neighboring items at the same time
+        self.imgMouse:size(math.max(0, itemWidth - 1), math.max(0, itemHeight - 1))
         self.imgMouse:alpha(isDebug and 32 or 0)
 
         self.mouseHandlerId = windower.register_event('mouse', function(type, x, y, delta, blocked)
@@ -149,6 +155,7 @@ function uiListItem:update()
     self:updateJob()
     self:updateCursor()
     self:updateBrdIndicator()
+    self:updateBrdRangeText()
 
     self.super:update()
 end
@@ -205,37 +212,53 @@ function uiListItem:updateCursor()
     self.cursor:opacity(opacity)
 end
 
+function uiListItem:updateBrdRangeText()
+    if not self.isEnabled then return end
+    
+    local isBrdMode = Settings and Settings.brdMode
+    local brdRange = Settings and Settings.brdRange
+    
+    if isBrdMode and brdRange and self.player and self.player.isMainPlayer and not self.player.isOutsideZone then
+        local rangeText = '[' .. tostring(brdRange) .. 'y]'
+        self.brdRangeText:update(rangeText)
+        
+        if self.layout.txtName and self.layout.txtName.pos then
+            local textWidth = self.brdRangeText.element and self.brdRangeText.element:extents() or 30
+            local x = self.itemWidth - textWidth - 20
+            local y = -14
+            self.brdRangeText:pos(x, y)
+        end
+        self.brdRangeText:show(const.visFeature)
+    else
+        self.brdRangeText:hide(const.visFeature)
+    end
+end
+
 function uiListItem:updateBrdIndicator()
     if not self.isEnabled then return end
 
     local isBrdMode = Settings and Settings.brdMode
     
-    -- Don't show indicator for the main player (yourself)
     if isBrdMode and self.player and not self.player.isOutsideZone and not self.player.isMainPlayer then
-        -- Position the indicator before the name
         if self.layout.txtName and self.layout.txtName.pos then
             local namePos = self.layout.txtName.pos
-            local x = namePos[1] - 10  -- Position to the left of the name
+            local x = namePos[1] - 10
             local y = namePos[2] - 7
             self.brdIndicator:pos(x, y)
         end
         
-        -- Change color based on distance
         if self.player.distance then
-            if self.player.distance <= 10 then
-                -- Within range 10 - green
+            local brdRange = Settings.brdRange or 10
+            if self.player.distance <= brdRange then
                 self.brdIndicator:color(0, 255, 0, 255)
             elseif self.player.distance < 50 then
-                -- Between 10 and 50 (targetable but out of buff range) - red
                 self.brdIndicator:color(255, 0, 0, 255)
             else
-                -- Too far away (not targetable) - hide the indicator
                 self.brdIndicator:hide(const.visFeature)
                 return
             end
             self.brdIndicator:show(const.visFeature)
         else
-            -- No distance info (player themselves) - don't show indicator
             self.brdIndicator:hide(const.visFeature)
         end
     else
