@@ -111,8 +111,14 @@ function uiSongBar:update()
         if self.player.songs[1] and self.player.songs[1].duration > 0 then
             local song = self.player.songs[1]
             local currentDuration = song.getDuration and song.getDuration() or song.duration
-            local progressRatio = currentDuration / song.maxDuration
-            local currentWidth = self.hpBarWidth * progressRatio
+            local progressRatio = 0
+            
+            if song.maxDuration and song.maxDuration > 0 then
+                progressRatio = math.max(0, math.min(1, currentDuration / song.maxDuration))
+            end
+            
+            local currentWidth = math.max(0, math.min(self.hpBarWidth, self.hpBarWidth * progressRatio))
+            
             
             if self.songBar1 then
                 self.songBar1:size(currentWidth, self.lineHeight)
@@ -132,8 +138,22 @@ function uiSongBar:update()
         if self.player.songs[2] and self.player.songs[2].duration > 0 then
             local song = self.player.songs[2]
             local currentDuration = song.getDuration and song.getDuration() or song.duration
-            local progressRatio = currentDuration / song.maxDuration
-            local currentWidth = self.mpBarWidth * progressRatio
+            local progressRatio = 0
+            
+            -- Check if maxDuration is being set incorrectly
+            if currentDuration == song.maxDuration then
+                print("ERROR: MP bar maxDuration equals currentDuration! This will always give ratio=1")
+                print("  song.duration: " .. (song.duration or "nil"))
+                print("  currentDuration: " .. currentDuration)
+                print("  song.maxDuration: " .. (song.maxDuration or "nil"))
+            end
+            
+            if song.maxDuration and song.maxDuration > 0 then
+                progressRatio = math.max(0, math.min(1, currentDuration / song.maxDuration))
+            end
+            
+            local currentWidth = math.max(0, math.min(self.mpBarWidth, self.mpBarWidth * progressRatio))
+            
             
             if self.songBar2 then
                 self.songBar2:size(currentWidth, self.lineHeight)

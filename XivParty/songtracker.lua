@@ -144,7 +144,7 @@ function songTracker:init(model)
     self.activeSongs = {} -- playerId -> { song1, song2 }
     self.lastUpdateTime = socket.gettime()
     self.spellTracking = {} -- playerId -> buffId -> spellId (tracks original spell that created buff)
-    self.songMaxDurations = {} -- buffId -> maxDuration
+    self.songMaxDurations = {} -- playerId -> buffId -> maxDuration (per-player tracking)
     
     self.buffReader = buffPacket.new()
     utils:log('Song tracker initialized with packet-based duration reading', 2)
@@ -418,27 +418,35 @@ function songTracker:updatePlayerSongs(player)
     player.songs = {}
     local songSlot = 1
     
-    -- Go through detected songs and assign to slots based on actual buff presence
+    -- Go through this specific player's buffs and assign to slots based on actual buff presence
     for i = 1, 32 do
-        local player_buffs = windower.ffxi.get_player().buffs
-        if player_buffs[i] and self:isSongBuff(player_buffs[i]) then
-            local duration = self:getSongDuration(nil, player_buffs[i])
+        local buffId = player.buffs[i]
+        if buffId and self:isSongBuff(buffId) then
+            local duration = self:getSongDuration(nil, buffId)
             
             if duration > 0 and songSlot <= 2 then
-                local songInfo = self:getSongInfo(player_buffs[i])
+                local songInfo = self:getSongInfo(buffId)
                 if songInfo then
-                    if not self.songMaxDurations[player_buffs[i]] then
-                        self.songMaxDurations[player_buffs[i]] = duration
+                    -- Initialize per-player max duration tracking
+                    if not self.songMaxDurations[playerId] then
+                        self.songMaxDurations[playerId] = {}
                     end
                     
-                    local buffId = player_buffs[i]
+                    -- Create unique key for this specific song slot
+                    local songKey = buffId .. "_slot" .. songSlot
+                    
+                    if not self.songMaxDurations[playerId][songKey] then
+                        self.songMaxDurations[playerId][songKey] = duration
+                    end
+                    
                     player.songs[songSlot] = {
                         duration = duration,
-                        maxDuration = self.songMaxDurations[buffId],
+                        maxDuration = self.songMaxDurations[playerId][songKey],
                         songType = songInfo.type,
                         name = songInfo.name,
                         color = songInfo.color,
                         buffId = buffId,
+                        songKey = songKey,
                         getDuration = function() return self:getSongDuration(nil, buffId) end
                     }
                     songSlot = songSlot + 1

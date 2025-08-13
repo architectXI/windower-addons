@@ -39,7 +39,6 @@ local uiRange = require('uiRange')
 local uiBuffIcons = require('uiBuffIcons')
 local uiText = require('uiText')
 local uiImage = require('uiImage')
-local uiSongBar = require('uiSongBar')
 local const = require('const')
 
 -- create the class, derive from uiContainer
@@ -54,13 +53,6 @@ function uiListItem:init(layout, player, isUiLocked, itemWidth, itemHeight)
         self.isUiLocked = isUiLocked
         self.itemWidth = itemWidth
 
-        -- Add song bar as background element (before other elements)
-        local songBarLayout = {
-            enabled = true,
-            pos = { x = 0, y = 0 },  -- Start at top-left corner
-            zOrder = -10  -- Behind all other elements
-        }
-        self.songBar = self:addChild(uiSongBar.new(songBarLayout, player))
         
         self.hover = self:addChild(uiImage.new(layout.hover))
         self.hover:hide(const.visFeature)
@@ -165,8 +157,6 @@ function uiListItem:update()
     self:updateCursor()
     self:updateBrdIndicator()
     self:updateBrdRangeText()
-    
-    -- Song bars are now updated directly by uiSongBar:update() using player.songs data
 
     self.super:update()
 end
