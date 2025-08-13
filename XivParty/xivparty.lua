@@ -46,6 +46,7 @@ local utils = require('utils')
 local uiView = require('uiView')
 local model = require('model').new()
 local settings = require('settings')
+local songTracker = require('songtracker')
 
 -- local and global variables
 local isInitialized = false
@@ -54,6 +55,7 @@ local lastFrameTimeMsec = 0
 
 local view = nil
 Settings = nil
+local songManager = nil
 
 local setupModel = nil
 local isSetupEnabled = false
@@ -71,6 +73,7 @@ local function init()
     if not isInitialized then
         Settings = settings.new(model)
         Settings:load()
+        songManager = songTracker.new(model)
         view = uiView.new(model) -- depends on settings, always create view after loading settings
         isInitialized = true
     end
@@ -83,6 +86,7 @@ local function dispose()
         end
         view = nil
         Settings = nil
+        songManager = nil
         isInitialized = false
     end
 end
@@ -123,6 +127,12 @@ windower.register_event('prerender', function()
 
     Settings:update()
     model:updatePlayers()
+    
+    -- Update song tracking for all players
+    if songManager then
+        songManager:updateAllPlayers()
+        songManager:cleanup()
+    end
 
     view:visible(isSetupEnabled or not Settings.hideSolo or not isSolo(), const.visSolo)
     view:update()
@@ -131,7 +141,26 @@ end)
 -- packets
 
 windower.register_event('incoming chunk',function(id,original,modified,injected,blocked)
-    if id == 0xC8 then -- alliance update
+    if id == 0x28 then -- action packet for spell tracking
+        if songManager then
+            local act = windower.packets.parse_action(original)
+            if act then
+                -- Only track songs cast by the main player
+                local player = windower.ffxi.get_player()
+                if player and act.actor_id == player.id then
+                    songManager:handleActionPacket(act)
+                end
+            end
+        end
+    elseif id == 0x37 then -- time packet for vana_offset
+        if songManager and songManager.buffReader then
+            songManager.buffReader.vana_offset = os.time() - (((original:unpack("I",0x41)*60 - original:unpack("I",0x3D)) % 0x100000000) / 60)
+        end
+    elseif id == 0x63 then -- buff update with timers
+        if songManager and songManager.buffReader then
+            songManager.buffReader:handleBuffPacket(original)
+        end
+    elseif id == 0xC8 then -- alliance update
         local packet = packets.parse('incoming', original)
         if packet then
             for i = 1, 18 do

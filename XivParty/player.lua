@@ -110,6 +110,8 @@ function player:update(member, target, subtarget)
     self.hpp = member.hpp
     self.mpp = member.mpp
     self.tpp = math.min(member.tp / 10, 100)
+    
+    -- Song duration updates will be handled by actual song detection system
 
     self.zone = member.zone
     self.isOutsideZone = self.zone and self.zone ~= windower.ffxi.get_info().zone
@@ -247,6 +249,12 @@ function player:createSetupData(job, subJob, isMainParty)
     self.isInCastingRange = self.distance < const.castRange
     self.isInTargetingRange = self.distance < const.targetRange
     self.isTrust = false
+    
+    -- Song tracking data
+    self.songs = {
+        { duration = 0, maxDuration = 0, songType = 'default' },
+        { duration = 0, maxDuration = 0, songType = 'default' }
+    }
 
     self.job = job
     self.jobLvl = 99
